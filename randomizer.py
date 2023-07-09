@@ -75,26 +75,38 @@ def modify_rigid_in_file(filename):
 
     # Regular expression to match the entire object
     pattern = (r'\[\s*RigidInstance\s*:\s*\d+\s*\]\s*'
-               r'\{.*?Pos:fff.*?\}\s*'
+               r'\{.*?Pos:fff.*?Orient:fff.*?\}\s*'
                r'"[^"]*"\s+"[^"]*"\s+"[^"]*"\s+"[^"]*"\s+'
+               r'(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+).*?'
                r'(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)')
 
-    # Function to replace the positions with random values
-    def replace_position(match):
+    # Function to replace the positions and orientations with random values
+    def replace_position_and_orientation(match):
         old_x, old_y, old_z = float(match.group(1)), float(match.group(2)), float(match.group(3))
-        new_x = str(old_x + random.uniform(-int(posx_var.get()), int(posx_var.get())))
-        new_y = str(old_y + random.uniform(-int(posy_var.get()), int(posy_var.get())))
-        new_z = str(old_z + random.uniform(-int(posz_var.get()), int(posz_var.get())))
-        return match.group(0).replace(match.group(1), new_x).replace(match.group(2), new_y).replace(match.group(3), new_z)
+        old_orientx, old_orienty, old_orientz = float(match.group(4)), float(match.group(5)), float(match.group(6))
+        new_x = str(old_x + random.uniform(-int(posx_var.get()), int(posx_var.get())) )
+        new_y = str(old_y + random.uniform(-int(posy_var.get()), int(posy_var.get())) )
+        new_z = str(old_z + random.uniform(-int(posz_var.get()), int(posz_var.get())) )
+        
+        new_orientx = str(old_orientx + random.uniform(-int(orientx_var.get()), int(orientx_var.get())) )
+        new_orienty = str(old_orienty + random.uniform(-int(orienty_var.get()), int(orienty_var.get())) )
+        new_orientz = str(old_orientz + random.uniform(-int(orientz_var.get()), int(orientz_var.get())) )
+       
+        return (match.group(0).replace(match.group(1), new_x)
+                             .replace(match.group(2), new_y)
+                             .replace(match.group(3), new_z)
+                             .replace(match.group(4), new_orientx)
+                             .replace(match.group(5), new_orienty)
+                             .replace(match.group(6), new_orientz))
 
-    # Replace all occurrences of the positions with random values
-    modified_content = re.sub(pattern, replace_position, content, flags=re.DOTALL)
+    # Replace all occurrences of the positions and orientations with random values
+    modified_content = re.sub(pattern, replace_position_and_orientation, content, flags=re.DOTALL)
 
     # Save the modified content back to the file
     with open(filename, 'w') as file:
         file.write(modified_content)
 
-    print(f"Rigid positions modified in {filename}")
+    print(f"Positions and orientations modified in {filename}")
 
 
 def modify_npc_in_file(filename):
@@ -109,6 +121,7 @@ def modify_save_in_file(filename):
 def modify_volume_in_file(filename):
     pass
 
+
 def modify_trigger_in_file(filename):
     pass
 
@@ -120,6 +133,7 @@ def modify_fx_in_file(filename):
 
 def modify_rope_in_file(filename):
     pass
+
 
 
 def randomize():
@@ -178,6 +192,7 @@ def convert_pack_and_move():
                     
                     try:
                         subprocess.run(["./exporttool.exe", "-c", input_file], capture_output=True)
+                        # subprocess.run(["./exportcompile.bat", input_file], shell=True, capture_output=True)
                     except Exception as e:
                         print("Something is wrong, probably you've messed up in" + filename )
                         print(e)
@@ -243,7 +258,8 @@ def convert_to_txt(input_folder, output_folder):
                 output_file = os.path.join(output_folder, filename + ".TXT")
                 
                 # Run the command using subprocess
-                subprocess.run(["exporttool.exe", "-d", input_file], capture_output=True)
+                # subprocess.run(["exporttool.exe", "-d", input_file], capture_output=True)
+                subprocess.run(["exportdecompile.bat", input_file], shell=True, capture_output=True)
                 
                 # Move the output file to the output folder
                 shutil.move(input_folder + '/' + filename+".TXT", output_file)
@@ -263,17 +279,19 @@ def save_snaphot():
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    undfs_path = os.getcwd() + '\\snap\\undfs.exe'
+    # undfs_path = os.getcwd() + '\\snap\\undfs.exe'
+    undfs_path = os.getcwd() + '\\snap\\unpack.bat'
     print(undfs_path)
 
     shutil.copy('./undfs.exe', './snap/undfs.exe')
+    shutil.copy('./unpack.bat', './snap/unpack.bat')
     for filename in os.listdir('./snap'):
         if not (  filename.startswith('audio') or filename.startswith('boot') or filename.startswith('common') ) and (filename.endswith('.dfs') or filename.endswith('.DFS')) :
             print(filename)
             command = [undfs_path, os.getcwd() + '\\snap\\' + filename]
             print(undfs_path)
             print(os.getcwd() + '\\snap\\' + filename)
-            print(subprocess.run(command))
+            print(subprocess.run(command, shell=True))
             common_source = './COMMON'
             level_source =  './LEVELS'
             shutil.move(common_source, './levelssnapshot/' + filename.split('.')[0] + '/COMMON' )
@@ -316,7 +334,7 @@ def preview():
 
 # Create the main window
 window = tk.Tk()
-window.title("Hobbit Randomizer by Mr_Kliff v1.0")
+window.title("Hobbit Randomizer by Mr_Kliff v1.1")
 
 # Get the screen dimensions
 screen_width = window.winfo_screenwidth()
@@ -324,7 +342,7 @@ screen_height = window.winfo_screenheight()
 
 # Calculate the window size based on screen dimensions
 window_width = int(screen_width * 0.5)  
-window_height = int(screen_height * 0.5)  
+window_height = int(screen_height * 0.65)  
 
 # Set the window size and position in the center of the screen
 window.geometry(f"{window_width}x{window_height}+{int((screen_width - window_width) / 2)}+{int((screen_height - window_height) / 2)}")
@@ -351,15 +369,14 @@ fx_object_var = tk.BooleanVar()
 rope_var = tk.BooleanVar()
 
 rigid_instances_var.set(True)
-npc_var.set(True)
-save_pedestal_var.set(True)
+
 
 posx_var = tk.StringVar(value="300")
 posy_var = tk.StringVar(value="400")
 posz_var = tk.StringVar(value="200")
-rotx_var = tk.StringVar(value="0")
-roty_var = tk.StringVar(value="0")
-rotz_var = tk.StringVar(value="0")
+orientx_var = tk.StringVar(value="100")
+orienty_var = tk.StringVar(value="0")
+orientz_var = tk.StringVar(value="0")
 
 
 #Level list variables
@@ -457,19 +474,19 @@ rot_label.grid(row=column_title_row + 5, column=4, padx=margin, pady=margin, sti
 rotx_label = tk.Label(window, text="X:", fg="black", bg="white")
 rotx_label.grid(row=column_title_row + 5, column=5, padx=margin, pady=margin, sticky="w")
 
-rotx_entry = tk.Entry(window, textvariable=rotx_var)
+rotx_entry = tk.Entry(window, textvariable=orientx_var)
 rotx_entry.grid(row=column_title_row + 5, column=6, padx=margin, pady=margin)
 
 roty_label = tk.Label(window, text="Y:", fg="black", bg="white")
 roty_label.grid(row=column_title_row + 6, column=5, padx=margin, pady=margin, sticky="w")
 
-roty_entry = tk.Entry(window, textvariable=roty_var)
+roty_entry = tk.Entry(window, textvariable=orienty_var)
 roty_entry.grid(row=column_title_row + 6, column=6, padx=margin, pady=margin)
 
 rotz_label = tk.Label(window, text="Z:", fg="black", bg="white")
 rotz_label.grid(row=column_title_row + 7, column=5, padx=margin, pady=margin, sticky="w")
 
-rotz_entry = tk.Entry(window, textvariable=rotz_var)
+rotz_entry = tk.Entry(window, textvariable=orientz_var)
 rotz_entry.grid(row=column_title_row + 7, column=6, padx=margin, pady=margin)
 
 # Create column titles
@@ -479,7 +496,7 @@ options_column_title.grid(row=column_title_row, column=1, padx=margin, pady=marg
 actions_column_title = tk.Label(window, text="Actions", fg="black", bg="white", font=("Arial", 12, "bold"))
 actions_column_title.grid(row=column_title_row, column=3, padx=margin, pady=margin, sticky="w")
 
-offsets_column_title = tk.Label(window, text="Offsets\n(only pos works)", fg="black", bg="white", font=("Arial", 12, "bold"))
+offsets_column_title = tk.Label(window, text="Offsets", fg="black", bg="white", font=("Arial", 12, "bold"))
 offsets_column_title.grid(row=column_title_row, column=4, padx=margin, pady=margin, sticky="w")
 
 levels = tk.Label(window, text="Levels", fg="black", bg="white", font=("Arial", 12, "bold"))
@@ -505,6 +522,23 @@ level_names = [ "Dream World",
    "Clouds Burst"]
 
 
+master_checkbox_var = tk.IntVar()
+
+def toggle_level_checkboxes():
+    checkbox_state = master_checkbox_var.get()
+    for checkbox in level_checkboxes:
+        if checkbox_state:
+            checkbox.select()  # Select the checkbox
+        else:
+            checkbox.deselect()  # Deselect the checkbox
+
+
+master_checkbox = tk.Checkbutton(
+    window, text="Select All", variable=master_checkbox_var,
+    command=toggle_level_checkboxes
+)
+master_checkbox.grid(row=9, column=2, padx=margin, pady=margin, sticky="w")
+
 for i in range(num_levels):
     level_checkbox = tk.Checkbutton(window, text=level_names[i], fg="black", bg="white", variable=lvl[i])
     level_checkbox.grid(row=column_title_row + (i // levels_per_column) + 10, column=(i % levels_per_column) + 1, padx=margin, pady=margin, sticky="w")
@@ -517,8 +551,8 @@ horizontal_line.create_line(0, 0, 700, 0, fill="black")
 horizontal_line.grid(row=8, column=1, columnspan=6, padx=margin, pady=margin, sticky="w")
 
 # Create a label for the name
-name_label = tk.Label(window, text="The Hobbit - Random Edition", fg="black", bg="white", font=("Arial", 22, "bold"))
-name_label.grid(row=9, column=2, columnspan=3, padx=margin, pady=margin-10)
+name_label = tk.Label(window, text="The Hobbit Randomizer", fg="black", bg="white", font=("Arial", 22, "bold"))
+name_label.grid(row=9, column=3, columnspan=3, padx=margin, pady=margin-10)
 
 # Start the Tkinter event loop
 window.mainloop()
